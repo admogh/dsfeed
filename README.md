@@ -1,7 +1,7 @@
 # Don't stop feed - for sustainable and portable feed
 
-Dsfeed is Python script to get sustainable feed.
-The feeds means not only RSS and Atom but also just a site with updated links.
+Dsfeed is Python script to get sustainable feed.  
+The feeds means not only RSS and Atom but also just a site with updated links.  
 Assumed serverless and using ChromeDriver and sqlite.
 
 ## Usages
