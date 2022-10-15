@@ -27,10 +27,16 @@ srcurl = ""
 if sys.argv[1:2]:
     srcurl = sys.argv[1]
 
-dbm = sqlitemodel.SqliteModel("./dsfeed.db") # should be env
+dbpath =  os.path.dirname(os.path.abspath(__file__)) + "/dsfeed.db"
+shostname = os.getenv('SYNC_HOSTNAME')
+spath = os.getenv('SYNC_PATH')
+cmn = common_library.CommonLibrary(shostname)
+cmn.scpGetFile(shostname, spath, dbpath)
+
+dbm = sqlitemodel.SqliteModel(dbpath)
 dbmconn = dbm.conn
 dbmcur = dbm.cur
-stsp = "./sql/tables" # should be env
+stsp =  os.path.dirname(os.path.abspath(__file__)) + "/sql/tables" # should be env
 fns = os.listdir(stsp)
 for fn in fns:
   f = open(stsp + "/" + fn, 'r')
@@ -143,5 +149,8 @@ if srcurl == "":
 else:
     getSrc(srcurl)
 
+cmn.scpPutFile(shostname, dbpath, spath)
+
 cdriver.driver.quit()
 del dbm
+del cmn
