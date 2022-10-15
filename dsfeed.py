@@ -82,7 +82,7 @@ class DsFeed:
         ss = re.findall("<link(|[^>]+)>([^<]+)<\/link>", src, re.S)
         for s in ss:
           hrefs.append(s[1])
-        print(hrefs)
+        #print(hrefs)
         for href in hrefs:
           url = href
           if url in dhrefs:
@@ -118,7 +118,7 @@ class DsFeed:
                   slashes.pop(k)
                 break
         sslashes = sorted(slashes.items(), key=lambda x:x[1], reverse=True)
-        print(sslashes)
+        #print(sslashes)
         try:
           sui = sslashes[ui]
           return urls[sui[0]]
