@@ -30,7 +30,7 @@ $ python -u main.py
 ```
 
 ## Setup 
-* create and set .env
+### create and set .env
 ```
 $ cat .env
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
@@ -42,7 +42,7 @@ SYNC_HOSTNAME=myserver
 SYNC_PATH=~/dsfeed.db
 ```
 
-* crontab example
+### crontab example
 ```
 0 */2 * * *		/Users/admogh/src/dsfeed/dsfeed.sh > /Users/admogh/log/dsfeed_$( date '+\%Y\%m\%d\%H\%M\%S' ).log 2>&1
 ```
