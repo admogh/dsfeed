@@ -36,7 +36,7 @@ $ cat .env
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
 ```
 
-If you could use multiple clients, please set the hostname(.ssh/config Host) and path to sync,
+If you could use multiple clients, please set the hostname(.ssh/config Host) and path to sync with scp,
 ```
 SYNC_HOSTNAME=myserver
 SYNC_PATH=~/dsfeed.db
