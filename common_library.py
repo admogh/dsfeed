@@ -9,28 +9,53 @@ import scp
 import paramiko
 
 class CommonLibrary:
-  def __init__(self, scpHost=None):
-    if scpHost is not None and scpHost != "":
+  def __init__(self, remoteHost=None):
+    if remoteHost is not None and remoteHost != "":
       config_file = os.path.join(os.getenv('HOME'), '.ssh/config')
       ssh_config = paramiko.SSHConfig()
       ssh_config.parse(open(config_file, 'r'))
-      lkup = ssh_config.lookup(scpHost)
+      lkup = ssh_config.lookup(remoteHost)
       #print(lkup)
       self.ssh = paramiko.SSHClient()
       self.ssh.load_system_host_keys()
+      self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy) # sftp
       self.ssh.connect(
           lkup['hostname'],
           username=lkup['user'],
           port=lkup['port'],
           key_filename=lkup['identityfile'],
       )
+      self.ssh_hostname = lkup['hostname']
+      self.ssh_user = lkup['user']
+      self.ssh_port = lkup['port']
+      self.ssh_identityfile = lkup['identityfile']
+
       self.scp = scp.SCPClient(self.ssh.get_transport())
+      # sftp
+      self.sftp = self.ssh.open_sftp()
 
   def scpGetFile(self, host, src, dst):
     print(host, src, dst)
     if hasattr(self, "scp"):
       try:
-        self.scp.get(src, dst)
+        paths = src.split('/')
+        pathdir = ""
+        for ipath in range(len(paths)):
+          if ipath == len(paths) - 1:
+            break
+          if pathdir != "":
+            pathdir = pathdir + '/'
+          pathdir = pathdir + paths[ipath]
+        print(paths, pathdir)
+        if pathdir == '~':
+          pathdir = "/home/" + self.ssh_user
+        self.sftp.chdir(pathdir)
+        #attrs = self.sftp.stat(paths[1])
+        attrs = self.sftp.stat(paths[len(paths)-1])
+        rst = attrs.st_mtime
+        lst = os.stat(dst).st_mtime
+        if rst > lst:
+          self.scp.get(src, dst)
       except scp.SCPException as ex:
         # Assumed that No such file or directory and ignored
         print(ex)
