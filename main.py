@@ -136,18 +136,21 @@ def getSrc(url):
         doc = cdriver.get_doc(url,4)
         srcScrape(doc)
 
-if srcurl == "":
-    # from db
-    dbmcur.execute("select id, url from sources")
-    rs = dbmcur.fetchall()
-    for r in rs:
-        id = r[0]
-        url = r[1]
-        print(id,url)
-        srcurl = url
-        getSrc(srcurl)
-else:
-    getSrc(srcurl)
+try:
+  if srcurl == "":
+      # from db
+      dbmcur.execute("select id, url from sources")
+      rs = dbmcur.fetchall()
+      for r in rs:
+          id = r[0]
+          url = r[1]
+          print(id,url)
+          srcurl = url
+          getSrc(srcurl)
+  else:
+      getSrc(srcurl)
+except KeyboardInterrupt:
+  pass
 
 cmn.scpPutFile(shostname, dbpath, spath)
 

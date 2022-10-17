@@ -38,6 +38,9 @@ class CommonLibrary:
     print(host, src, dst)
     if hasattr(self, "scp"):
       try:
+        rst = 0
+        lst = 0
+        # get ts
         paths = src.split('/')
         pathdir = ""
         for ipath in range(len(paths)):
@@ -53,7 +56,8 @@ class CommonLibrary:
         #attrs = self.sftp.stat(paths[1])
         attrs = self.sftp.stat(paths[len(paths)-1])
         rst = attrs.st_mtime
-        lst = os.stat(dst).st_mtime
+        if os.path.isfile(dst):
+          lst = os.stat(dst).st_mtime
         if rst > lst:
           self.scp.get(src, dst)
       except scp.SCPException as ex:
