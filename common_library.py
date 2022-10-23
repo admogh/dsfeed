@@ -19,20 +19,24 @@ class CommonLibrary:
       self.ssh = paramiko.SSHClient()
       self.ssh.load_system_host_keys()
       self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy) # sftp
-      self.ssh.connect(
-          lkup['hostname'],
-          username=lkup['user'],
-          port=lkup['port'],
-          key_filename=lkup['identityfile'],
-      )
-      self.ssh_hostname = lkup['hostname']
-      self.ssh_user = lkup['user']
-      self.ssh_port = lkup['port']
-      self.ssh_identityfile = lkup['identityfile']
+      try:
+        self.ssh.connect(
+            lkup['hostname'],
+            username=lkup['user'],
+            port=lkup['port'],
+            key_filename=lkup['identityfile'],
+        )
+        self.ssh_hostname = lkup['hostname']
+        self.ssh_user = lkup['user']
+        self.ssh_port = lkup['port']
+        self.ssh_identityfile = lkup['identityfile']
 
-      self.scp = scp.SCPClient(self.ssh.get_transport())
-      # sftp
-      self.sftp = self.ssh.open_sftp()
+        self.scp = scp.SCPClient(self.ssh.get_transport())
+        # sftp
+        self.sftp = self.ssh.open_sftp()
+      except Exception as ex:
+        # paramiko.ssh_exception.SSHException: Error reading SSH protocol banner
+        print("catch exception in CommonLibrary.__init__:", ex)
 
   def scpGetFile(self, host, src, dst):
     print(host, src, dst)
@@ -66,7 +70,12 @@ class CommonLibrary:
 
   def scpPutFile(self, host, src, dst):
     if hasattr(self, "scp"):
-      self.scp.put(src, dst)
+      try:
+        self.scp.put(src, dst)
+        print("scpPutFile completed(src,dst):",src,dst)
+      except scp.SCPException as ex:
+        print("catch scp.SCPException in scpPutFile:", ex)
+        return
 
   def __del__(self):
     if hasattr(self, "scp"):

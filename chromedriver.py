@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import TimeoutException
 import time
 import random
 from urllib.parse import urlparse
@@ -37,7 +38,7 @@ class ChromeDriver:
         chrome_option.add_argument(
             '--user-agent=' + user_agent[random.randrange(0, len(user_agent), 1)])
         self.driver = webdriver.Chrome(ChromeDriverManager().install(),chrome_options=chrome_option)
-        # self.driver.set_page_load_timeout(10)
+        self.driver.set_page_load_timeout(20)
     def __del__(self):
         self.driver.quit()
     def wait_scroll(self, tn, sn=0, lasten=0):
@@ -52,12 +53,18 @@ class ChromeDriver:
         #self.driver.find_element_by_tag_name('body').send_keys(Keys.PAGE_DOWN)
         #self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
-    def get_doc(self,url,sleep=1):
-        self.driver.get(url)
-        srcdomain = urlparse(url).netloc
+    def get_doc(self,url,retry=0):
+        time.sleep(retry)
+        try:
+          self.driver.get(url)
+        except TimeoutException as ex:
+          print("catch selenium.common.exceptions.TimeoutException in get_doc:",ex)
+          if retry >= 3:
+            print("failed to retry get_doc, give up(url,retry):",url,retry)
+            return ""
+          return ChromeDriver.get_doc(self, url, retry+1)
+        #srcdomain = urlparse(url).netloc
         #if srcdomain == "twitter.com":
         #    self.wait_scroll("article")
-        time.sleep(sleep)
         #driver.implicitly_wait(10)
         return self.driver.page_source 
-
