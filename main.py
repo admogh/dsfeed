@@ -76,9 +76,12 @@ def saveDriver(fn):
       return
     dt = datetime.now().strftime("%Y%m%d%H%M%S")
     path = logdir + "/" + fn + "___" + dt
-    driver.save_screenshot(path + ".png")
-    with open(path + ".html", "w") as f:
-        f.write(driver.page_source)
+    try:
+      driver.save_screenshot(path + ".png")
+      with open(path + ".html", "w") as f:
+          f.write(driver.page_source)
+    except Exception as ex:
+      print("catch Exception in saveDriver:",ex)
 
 def srcScrape(doc, ui=0):
     doc = html.unescape(doc)
