@@ -7,8 +7,8 @@ Assumed serverless and using ChromeDriver and sqlite.
 ## Usages
 ###  Get specific site feed
 ```sh
-$ python -u main.py https://news.google.com/
-$ python -u main.py https://news.google.com/rss
+$ python -u main.py --url https://news.google.com/
+$ python -u main.py --url https://news.google.com/rss
 ```
 
 ### From DB
@@ -41,6 +41,9 @@ If you could use multiple clients, please set the hostname(.ssh/config Host) and
 SYNC_HOSTNAME=myserver
 SYNC_PATH=~/dsfeed.db
 ```
+Also from v0.5 release, you could overwrite remote db with --rdb option and define log directory with **LOG_DIR** env. 
+if not defined LOG_DIR, would use "log/" if exists.
+
 
 ### crontab example
 ```
