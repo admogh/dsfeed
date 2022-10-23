@@ -1,4 +1,5 @@
 from datetime import datetime
+from argparse import ArgumentParser
 import os
 import re
 import json
@@ -23,20 +24,41 @@ import html
 from dotenv import load_dotenv
 load_dotenv()
 
-srcurl = ""
-if sys.argv[1:2]:
-    srcurl = sys.argv[1]
+usage = 'Usage: python {} [--url <url>] [--rdb <rdb>] [--help]'\
+        .format(__file__)
+argparser = ArgumentParser(usage=usage)
+argparser.add_argument('-u', '--url', type=str,
+                       dest='url',
+                       help='source url')
+argparser.add_argument('-r', '--rdb', type=str,
+                       dest='rdb',
+                       help='restore: overwrite remote db')
+args = argparser.parse_args()
 
-dbpath =  os.path.dirname(os.path.abspath(__file__)) + "/dsfeed.db"
+srcurl = ""
+if args.url:
+  print("url set:" + args.url)
+  srcurl = args.url
+
+rdbpath = ""
+if args.rdb:
+  if os.path.exists(args.rdb):
+    rdbpath = args.rdb
+
+basedir = os.path.dirname(os.path.abspath(__file__))
+dbpath =  basedir + "/dsfeed.db"
 shostname = os.getenv('SYNC_HOSTNAME')
 spath = os.getenv('SYNC_PATH')
 cmn = common_library.CommonLibrary(shostname)
+if rdbpath != "":
+  print("overwrite db(rdbpath,syncpath):",rdbpath,spath)
+  cmn.scpPutFile(shostname, rdbpath, spath)
 cmn.scpGetFile(shostname, spath, dbpath)
 
 dbm = sqlitemodel.SqliteModel(dbpath)
 dbmconn = dbm.conn
 dbmcur = dbm.cur
-stsp =  os.path.dirname(os.path.abspath(__file__)) + "/sql/tables" # should be env
+stsp =  basedir + "/sql/tables" # should be env
 fns = os.listdir(stsp)
 for fn in fns:
   f = open(stsp + "/" + fn, 'r')
@@ -49,8 +71,11 @@ driver = cdriver.driver
 cdsfeed = dsfeed.DsFeed(cdriver)
 
 def saveDriver(fn):
+    logdir = os.getenv('LOG_DIR', basedir+"/log")
+    if not os.path.exists(logdir):
+      return
     dt = datetime.now().strftime("%Y%m%d%H%M%S")
-    path = os.path.dirname(os.path.abspath(__file__)) + "/logs/" + fn + "___" + dt
+    path = logdir + "/" + fn + "___" + dt
     driver.save_screenshot(path + ".png")
     with open(path + ".html", "w") as f:
         f.write(driver.page_source)
@@ -127,14 +152,10 @@ def getSrc(url):
       url = "https://" + url
     print("getSrc: " + url)
     doc = cdriver.get_doc(url)
-    try:
-        srcScrape(doc)
-    except Exception as e:
-        saveDriver(common_library.CommonLibrary.getSrcLocationString())
-        print(e)
-        print("catch exception in getSrc and retry get")
-        doc = cdriver.get_doc(url,4)
-        srcScrape(doc)
+    if doc == "":
+      saveDriver(common_library.CommonLibrary.getSrcLocationString())
+    else:
+      srcScrape(doc)
 
 try:
   if srcurl == "":
