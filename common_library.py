@@ -30,7 +30,6 @@ class CommonLibrary:
         self.ssh_user = lkup['user']
         self.ssh_port = lkup['port']
         self.ssh_identityfile = lkup['identityfile']
-
         self.scp = scp.SCPClient(self.ssh.get_transport())
         # sftp
         self.sftp = self.ssh.open_sftp()
@@ -57,7 +56,6 @@ class CommonLibrary:
         if pathdir == '~':
           pathdir = "/home/" + self.ssh_user
         self.sftp.chdir(pathdir)
-        #attrs = self.sftp.stat(paths[1])
         attrs = self.sftp.stat(paths[len(paths)-1])
         rst = attrs.st_mtime
         if os.path.isfile(dst):
@@ -68,9 +66,34 @@ class CommonLibrary:
         # Assumed that No such file or directory and ignored
         print(ex)
 
-  def scpPutFile(self, host, src, dst):
+  # src is local, dst is remote
+  def scpPutFile(self, host, src, dst, ow=True):
     if hasattr(self, "scp"):
       try:
+        if ow==False:
+          rst = 0
+          lst = 0
+          # get ts
+          paths = dst.split('/')
+          pathdir = ""
+          for ipath in range(len(paths)):
+            if ipath == len(paths) - 1:
+              break
+            if pathdir != "":
+              pathdir = pathdir + '/'
+            pathdir = pathdir + paths[ipath]
+          print(paths, pathdir)
+          if pathdir == '~':
+            pathdir = "/home/" + self.ssh_user
+          self.sftp.chdir(pathdir)
+          attrs = self.sftp.stat(paths[len(paths)-1])
+          rst = attrs.st_mtime
+          if os.path.isfile(src):
+            lst = os.stat(src).st_mtime
+          print("src,dst,rst,lst:",src,dst,rst,lst)
+          if lst <= rst:
+            print("not put file for old(lst,rst):",lst,rst)
+            return
         self.scp.put(src, dst)
         print("scpPutFile completed(src,dst):",src,dst)
       except scp.SCPException as ex:

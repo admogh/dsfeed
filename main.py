@@ -1,4 +1,3 @@
-from datetime import datetime
 from argparse import ArgumentParser
 import os
 import re
@@ -47,16 +46,9 @@ if args.rdb:
 
 basedir = os.path.dirname(os.path.abspath(__file__))
 dbpath =  basedir + "/dsfeed.db"
-shostname = os.getenv('SYNC_HOSTNAME')
-spath = os.getenv('SYNC_PATH')
-cmn = common_library.CommonLibrary(shostname)
-if rdbpath != "":
-  print("overwrite db(rdbpath,syncpath):",rdbpath,spath)
-  cmn.scpPutFile(shostname, rdbpath, spath)
-cmn.scpGetFile(shostname, spath, dbpath)
-
 dbm = sqlitemodel.SqliteModel(dbpath)
-dbmconn = dbm.conn
+cdriver = chromedriver.ChromeDriver()
+cdsfeed = dsfeed.DsFeed(dbm, cdriver, basedir, rdbpath)
 dbmcur = dbm.cur
 stsp =  basedir + "/sql/tables" # should be env
 fns = os.listdir(stsp)
@@ -66,99 +58,15 @@ for fn in fns:
   dbmcur.execute(data)
   f.close()
 
-cdriver = chromedriver.ChromeDriver()
-driver = cdriver.driver
-cdsfeed = dsfeed.DsFeed(cdriver)
-
-def saveDriver(fn):
-    logdir = os.getenv('LOG_DIR', basedir+"/log")
-    if not os.path.exists(logdir):
-      return
-    dt = datetime.now().strftime("%Y%m%d%H%M%S")
-    path = logdir + "/" + fn + "___" + dt
-    try:
-      driver.save_screenshot(path + ".png")
-      with open(path + ".html", "w") as f:
-          f.write(driver.page_source)
-    except Exception as ex:
-      print("catch Exception in saveDriver:",ex)
-
-def srcScrape(doc, ui=0):
-    doc = html.unescape(doc)
-    doc = ' '.join(doc.splitlines())
-    doc = doc.replace("<![CDATA[", "").replace("]]>", "")
-    # title
-    title = dsfeed.DsFeed.getElement(doc, "title")
-    print("title: "+title)
-    urls = cdsfeed.getSiteList(doc, ui)
-    if len(urls) == 0:
-      print("not found urls:ui:",ui)
-      return
-    curl = driver.current_url
-    domain = urlparse(curl).netloc
-    nps = 0
-    for url in urls:
-        ret = re.search("^(\/|\.\/)", url, re.S)
-        if ret:
-            url = "https://" + domain + url
-        print("url:"+url)
-        dbmcur.execute("select count(*) from links where link = ?", (url,))
-        c = dbmcur.fetchone()[0]
-        if c >= 1:
-            continue
-        try:
-            driver.get(url)
-        except Exception as e:
-            saveDriver(common_library.CommonLibrary.getSrcLocationString())
-            print(e)
-            print("driver get failed and continue:"+url)
-            continue
-        doc = driver.page_source
-        tree = lxmlhtml.fromstring(doc)
-        # make out
-        out = "**"+title+"**\n"
-        etitle = dsfeed.DsFeed.getElement(doc, "title")
-        dbmcur.execute("select count(*) from titles where title = ?", (etitle,))
-        #dbmcur.statement
-        c = dbmcur.fetchone()[0]
-        if c >= 1:
-            continue
-        edesc = dsfeed.DsFeed.getElement(doc, "description")
-        if edesc == "":
-            edesc = dsfeed.DsFeed.getElement(doc, "h1")
-        print(etitle,edesc)
-        if edesc != "" and etitle != "":
-            out = out + etitle + "\n" + edesc + "\n"
-            out = out + url + "\n"
-            print(out)
-            common_library.CommonLibrary.toDiscord(os.getenv('DISCORD_WEBHOOK_URL'), out)
-            # datetime
-            cd = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # insert
-            dbmcur.execute(
-                "insert into links(source_url, link, created, updated) \
-                        values (?, ?, ?, ?)",
-                (srcurl, url, cd, cd),
-            )
-            dbmcur.execute(
-                "insert into titles(source_url, title, created, updated) \
-                        values (?, ?, ?, ?)",
-                (srcurl, etitle, cd, cd),
-            )
-            dbmconn.commit()
-            nps = nps + 1
-    if nps == 0:
-      srcScrape(doc, ui+1)
-
 def getSrc(url):
     if re.match("^(http|https):(\/|\/\/|)", url) is None:
       url = "https://" + url
     print("getSrc: " + url)
     doc = cdriver.get_doc(url)
     if doc == "":
-      saveDriver(common_library.CommonLibrary.getSrcLocationString())
+      cdsfeed.saveDriver(common_library.CommonLibrary.getSrcLocationString())
     else:
-      srcScrape(doc)
+      cdsfeed.srcScrape(url, doc)
 
 try:
   if srcurl == "":
@@ -176,8 +84,4 @@ try:
 except KeyboardInterrupt:
   pass
 
-cmn.scpPutFile(shostname, dbpath, spath)
-
-cdriver.driver.quit()
-del dbm
-del cmn
+del cdsfeed
