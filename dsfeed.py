@@ -132,20 +132,23 @@ class DsFeed:
             if not bkey in urls:
               urls[bkey] = []
             urls[bkey].append(url)
-        for k in list(slashes.keys()):
-          if re.match("^(http|https):(\/|\/\/|)$", k) is not None:
-          #if k == "" or re.match("^(http|https):(\/|\/\/|)$", k) is not None:
-            slashes.pop(k)
-          else:
-            for sk in slashes.keys():
-              if k == sk:
-                continue
-              elif re.match("^"+k, sk) is not None:
-                if slashes[sk] > slashes[k]:
-                  slashes.pop(k)
-                break
+        try:
+          for k in list(slashes.keys()):
+            if re.match("^(http|https):(\/|\/\/|)$", k) is not None:
+            #if k == "" or re.match("^(http|https):(\/|\/\/|)$", k) is not None:
+              slashes.pop(k)
+            else:
+              for sk in slashes.keys():
+                if k == sk:
+                  continue
+                elif re.match("^"+k, sk) is not None:
+                  if slashes[sk] > slashes[k]:
+                    slashes.pop(k)
+                  break
+        except Exception as ex:
+          print("catch Exception in for k in list(slashes.keys()):", ex)
+          return []
         sslashes = sorted(slashes.items(), key=lambda x:x[1], reverse=True)
-        #print(sslashes)
         try:
           sui = sslashes[ui]
           return urls[sui[0]]
@@ -196,7 +199,11 @@ class DsFeed:
                 print("driver get failed and continue:"+url)
                 continue
             doc = self.driver.page_source
-            tree = lxmlhtml.fromstring(doc)
+            try:
+                tree = lxmlhtml.fromstring(doc)
+            except Exception as e:
+                print("lxmlhtml.fromstring error:",e)
+                continue
             # make out
             out = "**"+title+"**\n"
             etitle = self.getElement(doc, "title")
